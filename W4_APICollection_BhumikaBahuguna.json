@@ -1,0 +1,602 @@
+{
+  "info": {
+    "_postman_id": "af68ae8e-2d8f-4671-b0f8-16c359545df2",
+    "name": "AgriSarthi Crop Telemetry REST API Collection (Week 4)",
+    "description": "Postman API testing collection for AgriSarthi backend server. Contains 8 requests verifying CRUD, stats, searching, validation, and error states.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Backend Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": []
+        },
+        "description": "Returns health status and list of active endpoints."
+      },
+      "response": [
+        {
+          "name": "Health Check Successful Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": []
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"status\": \"healthy\",\n  \"message\": \"AgriSarthi Backend API is running smoothly.\",\n  \"endpoints\": {\n    \"listCrops\": \"GET /api/crops\",\n    \"searchCrops\": \"GET /api/crops/search?q=...\",\n    \"cropStats\": \"GET /api/crops/stats\",\n    \"getCrop\": \"GET /api/crops/:id\",\n    \"createCrop\": \"POST /api/crops\",\n    \"updateCrop\": \"PUT /api/crops/:id\",\n    \"deleteCrop\": \"DELETE /api/crops/:id\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Crop Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/crops/stats",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops",
+            "stats"
+          ]
+        },
+        "description": "Fetch dynamic telemetry statistics for dashboard summary cards (Active Farms, Current Crops, Weather Alerts, Total Area)."
+      },
+      "response": [
+        {
+          "name": "Statistics Calculation Successful Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/crops/stats",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops",
+                "stats"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"activeFarms\": 8,\n  \"currentCrops\": 6,\n  \"weatherAlerts\": 3,\n  \"totalArea\": 38.8\n}"
+        }
+      ]
+    },
+    {
+      "name": "List All Crops",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/crops",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops"
+          ]
+        },
+        "description": "Retrieve all crop cycles registered in the in-memory array database."
+      },
+      "response": [
+        {
+          "name": "All Crops Retrieved Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/crops",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "[\n  {\n    \"id\": \"crop-1\",\n    \"name\": \"Rice\",\n    \"variety\": \"Basmati 370\",\n    \"type\": \"Grain\",\n    \"status\": \"Growing\",\n    \"plantedDate\": \"2026-06-01\",\n    \"expectedHarvestDate\": \"2026-10-15\",\n    \"fieldArea\": 5.5\n  },\n  {\n    \"id\": \"crop-2\",\n    \"name\": \"Wheat\",\n    \"variety\": \"Kalyan Sona\",\n    \"type\": \"Grain\",\n    \"status\": \"Planned\",\n    \"plantedDate\": \"\",\n    \"expectedHarvestDate\": \"2027-04-10\",\n    \"fieldArea\": 8\n  }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Get Single Crop (Found)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/crops/crop-1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops",
+            "crop-1"
+          ]
+        },
+        "description": "Retrieve complete details for a single crop entry using its ID."
+      },
+      "response": [
+        {
+          "name": "Single Crop Detail Found Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/crops/crop-1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops",
+                "crop-1"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"crop-1\",\n  \"name\": \"Rice\",\n  \"variety\": \"Basmati 370\",\n  \"type\": \"Grain\",\n  \"status\": \"Growing\",\n  \"plantedDate\": \"2026-06-01\",\n  \"expectedHarvestDate\": \"2026-10-15\",\n  \"fieldArea\": 5.5\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Single Crop (Not Found)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/crops/crop-999",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops",
+            "crop-999"
+          ]
+        },
+        "description": "Attempt to retrieve details of a crop that does not exist."
+      },
+      "response": [
+        {
+          "name": "Single Crop Not Found Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/crops/crop-999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops",
+                "crop-999"
+              ]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Crop with ID 'crop-999' not found.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Search Crops (Query)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/crops/search?q=Cotton",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "Cotton"
+            }
+          ]
+        },
+        "description": "Search for crop cycles containing a matching string query in name, variety, status, or type."
+      },
+      "response": [
+        {
+          "name": "Search Query Results Found Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/crops/search?q=Cotton",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Cotton"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "[\n  {\n    \"id\": \"crop-4\",\n    \"name\": \"Cotton\",\n    \"variety\": \"Bt Cotton II\",\n    \"type\": \"Cash Crop\",\n    \"status\": \"Growing\",\n    \"plantedDate\": \"2026-05-15\",\n    \"expectedHarvestDate\": \"2026-11-20\",\n    \"fieldArea\": 6.2\n  }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Create Crop Cycle (Successful)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Tomato\",\n  \"variety\": \"Roma\",\n  \"type\": \"Vegetable\",\n  \"status\": \"Planted\",\n  \"plantedDate\": \"2026-06-20\",\n  \"expectedHarvestDate\": \"2026-09-25\",\n  \"fieldArea\": 2.5\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/crops",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops"
+          ]
+        },
+        "description": "Record a new crop cycle with validated data structures."
+      },
+      "response": [
+        {
+          "name": "Create Crop Cycle Created Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Tomato\",\"variety\":\"Roma\",\"type\":\"Vegetable\",\"status\":\"Planted\",\"plantedDate\":\"2026-06-20\",\"expectedHarvestDate\":\"2026-09-25\",\"fieldArea\":2.5}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/crops",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"crop-1688000000000\",\n  \"name\": \"Tomato\",\n  \"variety\": \"Roma\",\n  \"type\": \"Vegetable\",\n  \"status\": \"Planted\",\n  \"plantedDate\": \"2026-06-20\",\n  \"expectedHarvestDate\": \"2026-09-25\",\n  \"fieldArea\": 2.5\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create Crop Cycle (Validation Error)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"\",\n  \"variety\": \"Roma\",\n  \"type\": \"Vegetable\",\n  \"status\": \"Planted\",\n  \"plantedDate\": \"2026-06-20\",\n  \"expectedHarvestDate\": \"2026-09-25\",\n  \"fieldArea\": -2.5\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/crops",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops"
+          ]
+        },
+        "description": "Attempt to create a crop cycle with invalid parameters (empty name, negative fieldArea)."
+      },
+      "response": [
+        {
+          "name": "Create Crop Cycle Validation Error Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"\",\"variety\":\"Roma\",\"type\":\"Vegetable\",\"status\":\"Planted\",\"plantedDate\":\"2026-06-20\",\"expectedHarvestDate\":\"2026-09-25\",\"fieldArea\":-2.5}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/crops",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": \"Validation error: Crop name is required and must be a valid string. | Field area is required and must be a positive number.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Update Crop Cycle",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Rice\",\n  \"variety\": \"Basmati 370\",\n  \"type\": \"Grain\",\n  \"status\": \"Harvested\",\n  \"plantedDate\": \"2026-06-01\",\n  \"expectedHarvestDate\": \"2026-10-15\",\n  \"fieldArea\": 6\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/crops/crop-1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops",
+            "crop-1"
+          ]
+        },
+        "description": "Modify an existing crop cycle item in database."
+      },
+      "response": [
+        {
+          "name": "Update Crop Cycle Successful Response",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Rice\",\"variety\":\"Basmati 370\",\"type\":\"Grain\",\"status\":\"Harvested\",\"plantedDate\":\"2026-06-01\",\"expectedHarvestDate\":\"2026-10-15\",\"fieldArea\":6}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/crops/crop-1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops",
+                "crop-1"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"crop-1\",\n  \"name\": \"Rice\",\n  \"variety\": \"Basmati 370\",\n  \"type\": \"Grain\",\n  \"status\": \"Harvested\",\n  \"plantedDate\": \"2026-06-01\",\n  \"expectedHarvestDate\": \"2026-10-15\",\n  \"fieldArea\": 6\n}"
+        }
+      ]
+    },
+    {
+      "name": "Delete Crop Cycle",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/crops/crop-3",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "crops",
+            "crop-3"
+          ]
+        },
+        "description": "Delete an existing crop cycle using its unique ID."
+      },
+      "response": [
+        {
+          "name": "Delete Crop Cycle Successful Response",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/crops/crop-3",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "crops",
+                "crop-3"
+              ]
+            }
+          },
+          "status": "No Content",
+          "code": 204,
+          "_postman_previewlanguage": "plain",
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 28 Jun 2026 12:00:00 GMT"
+            }
+          ],
+          "cookie": [],
+          "body": ""
+        }
+      ]
+    }
+  ]
+}

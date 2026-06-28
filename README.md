@@ -9,6 +9,30 @@ npm install
 npm run dev
 ```
 
+## Backend Server Setup
+
+The backend server is built with Node.js and Express.js, providing REST API endpoints to manage crop cycles and calculate telemetry statistics.
+
+### Environment Variables
+Create a `.env` file inside the `/backend` directory based on the `.env.example`:
+```env
+PORT=5000
+FRONTEND_URL=http://localhost:5173
+```
+
+### Installation and Launch
+Open a new terminal window and run:
+```bash
+# Navigate to backend and install dependencies
+cd backend
+npm install
+
+# Start the server in development mode (using nodemon)
+npm run dev
+```
+The server will start listening at `http://localhost:5000`. CORS is preconfigured to permit connection queries from your frontend at `http://localhost:5173`.
+
+
 ## Tailwind Setup
 
 Tailwind CSS is configured through `tailwind.config.js`, `postcss.config.js`, and `src/index.css`.
