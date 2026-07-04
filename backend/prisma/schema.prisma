@@ -1,0 +1,22 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Crop {
+  id                  String    @id @default(uuid())
+  name                String
+  variety             String
+  type                String
+  status              String
+  plantedDate         DateTime?
+  expectedHarvestDate DateTime?
+  fieldArea           Float
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}

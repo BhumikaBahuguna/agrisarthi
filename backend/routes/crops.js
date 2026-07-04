@@ -1,70 +1,19 @@
 import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
 
 const router = Router();
+const prisma = new PrismaClient();
 
-// In-memory data store for Crops
-let crops = [
-  {
-    id: 'crop-1',
-    name: 'Rice',
-    variety: 'Basmati 370',
-    type: 'Grain',
-    status: 'Growing',
-    plantedDate: '2026-06-01',
-    expectedHarvestDate: '2026-10-15',
-    fieldArea: 5.5
-  },
-  {
-    id: 'crop-2',
-    name: 'Wheat',
-    variety: 'Kalyan Sona',
-    type: 'Grain',
-    status: 'Planned',
-    plantedDate: '2026-11-05',
-    expectedHarvestDate: '2027-04-10',
-    fieldArea: 8.0
-  },
-  {
-    id: 'crop-3',
-    name: 'Tomato',
-    variety: 'Roma',
-    type: 'Vegetable',
-    status: 'Planted',
-    plantedDate: '2026-06-20',
-    expectedHarvestDate: '2026-09-25',
-    fieldArea: 2.5
-  },
-  {
-    id: 'crop-4',
-    name: 'Cotton',
-    variety: 'Bt Cotton II',
-    type: 'Cash Crop',
-    status: 'Growing',
-    plantedDate: '2026-05-15',
-    expectedHarvestDate: '2026-11-20',
-    fieldArea: 6.2
-  },
-  {
-    id: 'crop-5',
-    name: 'Sugarcane',
-    variety: 'Co 86032',
-    type: 'Cash Crop',
-    status: 'Harvested',
-    plantedDate: '2025-06-10',
-    expectedHarvestDate: '2026-05-30',
-    fieldArea: 12.0
-  },
-  {
-    id: 'crop-6',
-    name: 'Maize',
-    variety: 'Ganga 5',
-    type: 'Grain',
-    status: 'Growing',
-    plantedDate: '2026-05-28',
-    expectedHarvestDate: '2026-09-10',
-    fieldArea: 4.8
-  }
-];
+// Helper to format crop dates for the frontend (YYYY-MM-DD)
+const formatCrop = (crop) => {
+  return {
+    ...crop,
+    plantedDate: crop.plantedDate ? crop.plantedDate.toISOString().split('T')[0] : '',
+    expectedHarvestDate: crop.expectedHarvestDate ? crop.expectedHarvestDate.toISOString().split('T')[0] : '',
+    createdAt: crop.createdAt ? crop.createdAt.toISOString() : undefined,
+    updatedAt: crop.updatedAt ? crop.updatedAt.toISOString() : undefined,
+  };
+};
 
 // Helper to validate crop data
 const validateCrop = (data) => {
@@ -100,8 +49,9 @@ const validateCrop = (data) => {
 };
 
 // 1. GET /api/crops/stats - Calculate dashboard statistics
-router.get('/stats', (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
+    const crops = await prisma.crop.findMany();
     const totalArea = crops.reduce((sum, crop) => sum + crop.fieldArea, 0);
     const activeGrowing = crops.filter(c => c.status === 'Growing' || c.status === 'Planted').length;
     
@@ -119,122 +69,142 @@ router.get('/stats', (req, res) => {
       totalArea: parseFloat(totalArea.toFixed(2))
     });
   } catch (error) {
+    console.error('Stats fetch error:', error);
     res.status(500).json({ error: 'Failed to calculate stats.' });
   }
 });
 
 // 2. GET /api/crops/search - Search crops
-router.get('/search', (req, res) => {
+router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) {
-      return res.status(200).json(crops);
+      const crops = await prisma.crop.findMany();
+      return res.status(200).json(crops.map(formatCrop));
     }
 
     const query = q.toLowerCase().trim();
-    const results = crops.filter(crop => 
-      crop.name.toLowerCase().includes(query) ||
-      crop.variety.toLowerCase().includes(query) ||
-      crop.type.toLowerCase().includes(query) ||
-      crop.status.toLowerCase().includes(query)
-    );
+    const results = await prisma.crop.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { variety: { contains: query, mode: 'insensitive' } },
+          { type: { contains: query, mode: 'insensitive' } },
+          { status: { contains: query, mode: 'insensitive' } },
+        ]
+      }
+    });
 
-    res.status(200).json(results);
+    res.status(200).json(results.map(formatCrop));
   } catch (error) {
+    console.error('Search crops error:', error);
     res.status(500).json({ error: 'Failed to search crops.' });
   }
 });
 
 // 3. GET /api/crops - List all crops
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    res.status(200).json(crops);
+    const crops = await prisma.crop.findMany();
+    res.status(200).json(crops.map(formatCrop));
   } catch (error) {
+    console.error('Fetch crops error:', error);
     res.status(500).json({ error: 'Failed to fetch crops list.' });
   }
 });
 
 // 4. GET /api/crops/:id - Get details of a single crop
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
-    const crop = crops.find(c => c.id === req.params.id);
+    const crop = await prisma.crop.findUnique({
+      where: { id: req.params.id }
+    });
+    
     if (!crop) {
-      return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
+      return res.status(404).json({ success: false, error: `Crop with ID '${req.params.id}' not found.` });
     }
-    res.status(200).json(crop);
+    res.status(200).json(formatCrop(crop));
   } catch (error) {
+    console.error('Fetch crop details error:', error);
     res.status(500).json({ error: 'Failed to fetch crop details.' });
   }
 });
 
 // 5. POST /api/crops - Create a new crop entry
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const validationErrors = validateCrop(req.body);
     if (validationErrors.length > 0) {
       return res.status(400).json({ error: `Validation error: ${validationErrors.join(' | ')}` });
     }
 
-    const newCrop = {
-      id: `crop-${Date.now()}`,
-      name: req.body.name.trim(),
-      variety: req.body.variety.trim(),
-      type: req.body.type.trim(),
-      status: req.body.status,
-      plantedDate: req.body.status === 'Planned' ? '' : req.body.plantedDate,
-      expectedHarvestDate: req.body.expectedHarvestDate,
-      fieldArea: parseFloat(req.body.fieldArea)
-    };
+    const newCrop = await prisma.crop.create({
+      data: {
+        name: req.body.name.trim(),
+        variety: req.body.variety.trim(),
+        type: req.body.type.trim(),
+        status: req.body.status,
+        plantedDate: (req.body.status !== 'Planned' && req.body.plantedDate) ? new Date(req.body.plantedDate) : null,
+        expectedHarvestDate: req.body.expectedHarvestDate ? new Date(req.body.expectedHarvestDate) : null,
+        fieldArea: parseFloat(req.body.fieldArea)
+      }
+    });
 
-    crops.push(newCrop);
-    res.status(201).json(newCrop);
+    res.status(201).json(formatCrop(newCrop));
   } catch (error) {
+    console.error('Create crop error:', error);
     res.status(500).json({ error: 'Failed to create crop entry.' });
   }
 });
 
 // 6. PUT /api/crops/:id - Update an existing crop entry
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
-    const cropIndex = crops.findIndex(c => c.id === req.params.id);
-    if (cropIndex === -1) {
-      return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
-    }
-
     const validationErrors = validateCrop(req.body);
     if (validationErrors.length > 0) {
       return res.status(400).json({ error: `Validation error: ${validationErrors.join(' | ')}` });
     }
 
-    const updatedCrop = {
-      id: req.params.id,
-      name: req.body.name.trim(),
-      variety: req.body.variety.trim(),
-      type: req.body.type.trim(),
-      status: req.body.status,
-      plantedDate: req.body.status === 'Planned' ? '' : req.body.plantedDate,
-      expectedHarvestDate: req.body.expectedHarvestDate,
-      fieldArea: parseFloat(req.body.fieldArea)
-    };
+    const existingCrop = await prisma.crop.findUnique({ where: { id: req.params.id } });
+    if (!existingCrop) {
+      return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
+    }
 
-    crops[cropIndex] = updatedCrop;
-    res.status(200).json(updatedCrop);
+    const updatedCrop = await prisma.crop.update({
+      where: { id: req.params.id },
+      data: {
+        name: req.body.name.trim(),
+        variety: req.body.variety.trim(),
+        type: req.body.type.trim(),
+        status: req.body.status,
+        plantedDate: (req.body.status !== 'Planned' && req.body.plantedDate) ? new Date(req.body.plantedDate) : null,
+        expectedHarvestDate: req.body.expectedHarvestDate ? new Date(req.body.expectedHarvestDate) : null,
+        fieldArea: parseFloat(req.body.fieldArea)
+      }
+    });
+
+    res.status(200).json(formatCrop(updatedCrop));
   } catch (error) {
+    console.error('Update crop error:', error);
     res.status(500).json({ error: 'Failed to update crop entry.' });
   }
 });
 
 // 7. DELETE /api/crops/:id - Delete a crop entry
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
-    const cropIndex = crops.findIndex(c => c.id === req.params.id);
-    if (cropIndex === -1) {
+    const existingCrop = await prisma.crop.findUnique({ where: { id: req.params.id } });
+    if (!existingCrop) {
       return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
     }
 
-    crops.splice(cropIndex, 1);
+    await prisma.crop.delete({
+      where: { id: req.params.id }
+    });
+    
     res.status(204).send(); // 204 No Content returns no body
   } catch (error) {
+    console.error('Delete crop error:', error);
     res.status(500).json({ error: 'Failed to delete crop entry.' });
   }
 });
