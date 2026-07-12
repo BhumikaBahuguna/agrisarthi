@@ -1,15 +1,29 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-
-const navLinks = [
-  { label: 'Home', path: '/' },
-  { label: 'About', path: '/about' },
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Login', path: '/login' },
-];
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
+    navigate('/');
+  };
+
+  const navLinks = [
+    { label: 'Home', path: '/' },
+    { label: 'About', path: '/about' },
+  ];
+
+  if (user) {
+    navLinks.push({ label: 'Dashboard', path: '/dashboard' });
+    navLinks.push({ label: 'Profile', path: '/profile' });
+  } else {
+    navLinks.push({ label: 'Login', path: '/login' });
+  }
 
   const linkClass = ({ isActive }) =>
     `rounded-md px-3 py-2 text-sm font-medium transition ${
@@ -28,14 +42,29 @@ function Navbar() {
           <span className="text-xl font-bold text-leaf-900">AgriSarthi</span>
         </NavLink>
 
+        {/* Desktop Nav */}
         <div className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <NavLink key={link.path} to={link.path} className={linkClass}>
               {link.label}
             </NavLink>
           ))}
+          {user && (
+            <div className="flex items-center gap-3 pl-3 border-l border-slate-100">
+              <span className="text-xs font-semibold text-slate-500 font-mono">
+                👤 {user.name || user.email}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="rounded-md bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100 hover:text-red-700"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* Mobile menu toggle */}
         <button
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-leaf-100 text-leaf-900 md:hidden"
@@ -52,6 +81,7 @@ function Navbar() {
         </button>
       </nav>
 
+      {/* Mobile Nav */}
       {isOpen && (
         <div className="border-t border-leaf-100 bg-white px-4 pb-4 md:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 pt-3">
@@ -65,6 +95,19 @@ function Navbar() {
                 {link.label}
               </NavLink>
             ))}
+            {user && (
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                <span className="text-xs font-semibold text-slate-500 px-3 py-1 font-mono">
+                  👤 {user.name || user.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="rounded-md bg-red-50 text-left px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+                >
+                  🚪 Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

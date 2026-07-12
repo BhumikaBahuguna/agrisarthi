@@ -3,11 +3,15 @@ import Card from '../components/Card.jsx';
 import Footer from '../components/Footer.jsx';
 import Navbar from '../components/Navbar.jsx';
 import { Button, Input, Modal, Toast, Loader } from '../components/ui';
+import { useAuth } from '../context/AuthContext.jsx';
+
 
 const API_BASE = 'http://localhost:5000/api/crops';
 
 function Dashboard() {
+  const { token, logout } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(false);
+
   const [crops, setCrops] = useState([]);
   const [stats, setStats] = useState({
     activeFarms: '00',
@@ -108,9 +112,16 @@ function Dashboard() {
   const fetchStats = async () => {
     const startTime = Date.now();
     try {
-      const response = await fetch(`${API_BASE}/stats`);
+      const response = await fetch(`${API_BASE}/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const latency = Date.now() - startTime;
       logApiCall('GET', `${API_BASE}/stats`, response.status, latency);
+      
+      if (response.status === 401) {
+        logout();
+        return;
+      }
       
       if (!response.ok) throw new Error('Failed to fetch stats');
       const data = await response.json();
@@ -132,9 +143,16 @@ function Dashboard() {
       const url = query.trim() 
         ? `${API_BASE}/search?q=${encodeURIComponent(query)}`
         : API_BASE;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const latency = Date.now() - startTime;
       logApiCall('GET', url, response.status, latency);
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
 
       if (!response.ok) throw new Error('Failed to fetch crops list');
       const data = await response.json();
@@ -232,11 +250,19 @@ function Dashboard() {
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(payload),
       });
       const latency = Date.now() - startTime;
       logApiCall(method, url, response.status, latency);
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -274,9 +300,15 @@ function Dashboard() {
     try {
       const response = await fetch(`${API_BASE}/${cropToDelete.id}`, {
         method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
       });
       const latency = Date.now() - startTime;
       logApiCall('DELETE', `${API_BASE}/${cropToDelete.id}`, response.status, latency);
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
 
       if (!response.ok) throw new Error('Deletion failed.');
 

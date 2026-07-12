@@ -9,9 +9,26 @@ AgriSarthi uses PostgreSQL hosted on **Supabase** for persistent data storage. W
 
 ## Schema Overview
 
-The database schema is minimal and focused exclusively on the active entities needed for the frontend. Unused models (like User or Product) were omitted to adhere to YAGNI principles and avoid breaking existing functionality.
+The database schema includes user authentication and user-scoped crop cycle management.
+
+### `User` Model
+
+Represents registered farmers and portal users.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `String (UUID)` | Primary Key |
+| `email` | `String` | Unique email for credentials login |
+| `password` | `String?` | Hashed password (bcrypt), nullable for OAuth accounts |
+| `name` | `String?` | User display name |
+| `googleId` | `String?` | Unique sub key for Google OAuth |
+| `githubId` | `String?` | Unique ID key for GitHub OAuth |
+| `createdAt` | `DateTime` | Auto-generated registration timestamp |
+| `updatedAt` | `DateTime` | Auto-generated timestamp |
 
 ### `Crop` Model
+
+Represents crop timelines, associated with the creating user.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -23,8 +40,13 @@ The database schema is minimal and focused exclusively on the active entities ne
 | `plantedDate` | `DateTime?` | Optional planting date |
 | `expectedHarvestDate` | `DateTime?` | Optional harvest date |
 | `fieldArea` | `Float` | Acreage |
+| `userId` | `String?` | Foreign key referencing `User.id` (Nullable for shared/legacy crops) |
 | `createdAt` | `DateTime` | Auto-generated timestamp |
 | `updatedAt` | `DateTime` | Auto-generated timestamp |
+
+### Relationships
+
+- **User 1 ── 0..* Crop**: A `User` can own multiple `Crop` cycles. Deleting a User cascade-deletes their associated Crops.
 
 ## Prisma Workflow
 

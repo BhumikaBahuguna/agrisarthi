@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -48,10 +49,24 @@ const validateCrop = (data) => {
   return errors;
 };
 
-// 1. GET /api/crops/stats - Calculate dashboard statistics
-router.get('/stats', async (req, res) => {
+// Helper to construct user ownership filter
+// Includes crops owned by the user, OR legacy unassigned crops
+const getOwnershipFilter = (userId) => {
+  return {
+    OR: [
+      { userId: userId },
+      { userId: null }
+    ]
+  };
+};
+
+// 1. GET /api/crops/stats - Calculate dashboard statistics (authenticated)
+router.get('/stats', requireAuth, async (req, res) => {
   try {
-    const crops = await prisma.crop.findMany();
+    const crops = await prisma.crop.findMany({
+      where: getOwnershipFilter(req.user.id)
+    });
+    
     const totalArea = crops.reduce((sum, crop) => sum + crop.fieldArea, 0);
     const activeGrowing = crops.filter(c => c.status === 'Growing' || c.status === 'Planted').length;
     
@@ -74,23 +89,30 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// 2. GET /api/crops/search - Search crops
-router.get('/search', async (req, res) => {
+// 2. GET /api/crops/search - Search crops (authenticated)
+router.get('/search', requireAuth, async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) {
-      const crops = await prisma.crop.findMany();
+      const crops = await prisma.crop.findMany({
+        where: getOwnershipFilter(req.user.id)
+      });
       return res.status(200).json(crops.map(formatCrop));
     }
 
     const query = q.toLowerCase().trim();
     const results = await prisma.crop.findMany({
       where: {
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { variety: { contains: query, mode: 'insensitive' } },
-          { type: { contains: query, mode: 'insensitive' } },
-          { status: { contains: query, mode: 'insensitive' } },
+        AND: [
+          getOwnershipFilter(req.user.id),
+          {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { variety: { contains: query, mode: 'insensitive' } },
+              { type: { contains: query, mode: 'insensitive' } },
+              { status: { contains: query, mode: 'insensitive' } },
+            ]
+          }
         ]
       }
     });
@@ -102,10 +124,12 @@ router.get('/search', async (req, res) => {
   }
 });
 
-// 3. GET /api/crops - List all crops
-router.get('/', async (req, res) => {
+// 3. GET /api/crops - List all crops (authenticated)
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const crops = await prisma.crop.findMany();
+    const crops = await prisma.crop.findMany({
+      where: getOwnershipFilter(req.user.id)
+    });
     res.status(200).json(crops.map(formatCrop));
   } catch (error) {
     console.error('Fetch crops error:', error);
@@ -113,15 +137,16 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 4. GET /api/crops/:id - Get details of a single crop
-router.get('/:id', async (req, res) => {
+// 4. GET /api/crops/:id - Get details of a single crop (authenticated)
+router.get('/:id', requireAuth, async (req, res) => {
   try {
     const crop = await prisma.crop.findUnique({
       where: { id: req.params.id }
     });
     
-    if (!crop) {
-      return res.status(404).json({ success: false, error: `Crop with ID '${req.params.id}' not found.` });
+    // Check existence and user authorization
+    if (!crop || (crop.userId !== null && crop.userId !== req.user.id)) {
+      return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
     }
     res.status(200).json(formatCrop(crop));
   } catch (error) {
@@ -130,8 +155,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 5. POST /api/crops - Create a new crop entry
-router.post('/', async (req, res) => {
+// 5. POST /api/crops - Create a new crop entry (authenticated)
+router.post('/', requireAuth, async (req, res) => {
   try {
     const validationErrors = validateCrop(req.body);
     if (validationErrors.length > 0) {
@@ -146,7 +171,8 @@ router.post('/', async (req, res) => {
         status: req.body.status,
         plantedDate: (req.body.status !== 'Planned' && req.body.plantedDate) ? new Date(req.body.plantedDate) : null,
         expectedHarvestDate: req.body.expectedHarvestDate ? new Date(req.body.expectedHarvestDate) : null,
-        fieldArea: parseFloat(req.body.fieldArea)
+        fieldArea: parseFloat(req.body.fieldArea),
+        userId: req.user.id // Associate crop with logged-in user
       }
     });
 
@@ -157,8 +183,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 6. PUT /api/crops/:id - Update an existing crop entry
-router.put('/:id', async (req, res) => {
+// 6. PUT /api/crops/:id - Update an existing crop entry (authenticated)
+router.put('/:id', requireAuth, async (req, res) => {
   try {
     const validationErrors = validateCrop(req.body);
     if (validationErrors.length > 0) {
@@ -166,7 +192,9 @@ router.put('/:id', async (req, res) => {
     }
 
     const existingCrop = await prisma.crop.findUnique({ where: { id: req.params.id } });
-    if (!existingCrop) {
+    
+    // Check ownership
+    if (!existingCrop || (existingCrop.userId !== null && existingCrop.userId !== req.user.id)) {
       return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
     }
 
@@ -179,7 +207,8 @@ router.put('/:id', async (req, res) => {
         status: req.body.status,
         plantedDate: (req.body.status !== 'Planned' && req.body.plantedDate) ? new Date(req.body.plantedDate) : null,
         expectedHarvestDate: req.body.expectedHarvestDate ? new Date(req.body.expectedHarvestDate) : null,
-        fieldArea: parseFloat(req.body.fieldArea)
+        fieldArea: parseFloat(req.body.fieldArea),
+        userId: req.user.id // Claim ownership if it was a legacy unassigned crop
       }
     });
 
@@ -190,11 +219,13 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 7. DELETE /api/crops/:id - Delete a crop entry
-router.delete('/:id', async (req, res) => {
+// 7. DELETE /api/crops/:id - Delete a crop entry (authenticated)
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const existingCrop = await prisma.crop.findUnique({ where: { id: req.params.id } });
-    if (!existingCrop) {
+    
+    // Check ownership
+    if (!existingCrop || (existingCrop.userId !== null && existingCrop.userId !== req.user.id)) {
       return res.status(404).json({ error: `Crop with ID '${req.params.id}' not found.` });
     }
 

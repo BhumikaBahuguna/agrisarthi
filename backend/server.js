@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 import cropRoutes from './routes/crops.js';
+import authRoutes from './routes/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +23,16 @@ app.use(cors({
 // Parse JSON request bodies
 app.use(express.json());
 
+// Rate limiter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: { error: 'Too many attempts. Please try again after 15 minutes.' },
+  statusCode: 429,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Log incoming requests for debugging/verification
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -39,13 +51,21 @@ app.get('/', (req, res) => {
       getCrop: 'GET /api/crops/:id',
       createCrop: 'POST /api/crops',
       updateCrop: 'PUT /api/crops/:id',
-      deleteCrop: 'DELETE /api/crops/:id'
+      deleteCrop: 'DELETE /api/crops/:id',
+      register: 'POST /api/auth/register',
+      login: 'POST /api/auth/login',
+      me: 'GET /api/auth/me'
     }
   });
 });
 
+// Apply rate limiting to Auth endpoints specifically
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/login', authLimiter);
+
 // Mount routes
 app.use('/api/crops', cropRoutes);
+app.use('/api/auth', authRoutes);
 
 // 404 Route handler
 app.use((req, res, next) => {
