@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { runDbQuery, mockUsers } from '../mockDb.js';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'agrisarthi_secret_fallback_key';
@@ -19,10 +20,13 @@ export const requireAuth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Fetch user to ensure they still exist in the database
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId }
-    });
+    // Fetch user with offline fallback support
+    const user = await runDbQuery(
+      prisma.user.findUnique({
+        where: { id: decoded.userId }
+      }),
+      () => mockUsers.find(u => u.id === decoded.userId)
+    );
 
     if (!user) {
       return res.status(401).json({

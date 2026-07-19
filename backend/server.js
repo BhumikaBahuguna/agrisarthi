@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import cropRoutes from './routes/crops.js';
 import authRoutes from './routes/auth.js';
+import aiRoutes from './routes/ai.js';
+
 
 // Load environment variables
 dotenv.config();
@@ -66,6 +68,8 @@ app.use('/api/auth/login', authLimiter);
 // Mount routes
 app.use('/api/crops', cropRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
+
 
 // 404 Route handler
 app.use((req, res, next) => {

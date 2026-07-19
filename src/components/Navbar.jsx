@@ -20,6 +20,7 @@ function Navbar() {
 
   if (user) {
     navLinks.push({ label: 'Dashboard', path: '/dashboard' });
+    navLinks.push({ label: 'AI Advisor', path: '/ai-advisor' });
     navLinks.push({ label: 'Profile', path: '/profile' });
   } else {
     navLinks.push({ label: 'Login', path: '/login' });

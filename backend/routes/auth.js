@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
+import { runDbQuery, mockUsers } from '../mockDb.js';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -39,9 +40,12 @@ router.post('/register', async (req, res) => {
     const { name, email, password } = validation.data;
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
+    const existingUser = await runDbQuery(
+      prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      }),
+      () => mockUsers.find(u => u.email === email.toLowerCase())
+    );
 
     if (existingUser) {
       return res.status(400).json({ success: false, error: 'Email is already registered.' });
@@ -52,13 +56,27 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Save to Database
-    const newUser = await prisma.user.create({
-      data: {
-        name,
-        email: email.toLowerCase(),
-        password: hashedPassword
+    const newUser = await runDbQuery(
+      prisma.user.create({
+        data: {
+          name,
+          email: email.toLowerCase(),
+          password: hashedPassword
+        }
+      }),
+      () => {
+        const u = {
+          id: `mock-user-${Date.now()}`,
+          name,
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        mockUsers.push(u);
+        return u;
       }
-    });
+    );
 
     // Return success response without the password
     res.status(201).json({
@@ -90,9 +108,12 @@ router.post('/login', async (req, res) => {
     const { email, password } = validation.data;
 
     // Find User
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
+    const user = await runDbQuery(
+      prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      }),
+      () => mockUsers.find(u => u.email === email.toLowerCase())
+    );
 
     if (!user || !user.password) {
       return res.status(400).json({ success: false, error: 'Invalid email or password.' });
@@ -232,25 +253,48 @@ router.get('/google/callback', async (req, res) => {
     }
 
     // Find or Create User
-    let user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
+    let user = await runDbQuery(
+      prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      }),
+      () => mockUsers.find(u => u.email === email.toLowerCase())
+    );
 
     if (user) {
       if (!user.googleId) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { googleId }
-        });
+        user = await runDbQuery(
+          prisma.user.update({
+            where: { id: user.id },
+            data: { googleId }
+          }),
+          () => {
+            user.googleId = googleId;
+            return user;
+          }
+        );
       }
     } else {
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          name,
-          googleId
+      user = await runDbQuery(
+        prisma.user.create({
+          data: {
+            email: email.toLowerCase(),
+            name,
+            googleId
+          }
+        }),
+        () => {
+          const u = {
+            id: `mock-user-${Date.now()}`,
+            email: email.toLowerCase(),
+            name,
+            googleId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          mockUsers.push(u);
+          return u;
         }
-      });
+      );
     }
 
     // Sign JWT Token
@@ -376,25 +420,48 @@ router.get('/github/callback', async (req, res) => {
     }
 
     // Find or Create User
-    let user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
+    let user = await runDbQuery(
+      prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      }),
+      () => mockUsers.find(u => u.email === email.toLowerCase())
+    );
 
     if (user) {
       if (!user.githubId) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { githubId }
-        });
+        user = await runDbQuery(
+          prisma.user.update({
+            where: { id: user.id },
+            data: { githubId }
+          }),
+          () => {
+            user.githubId = githubId;
+            return user;
+          }
+        );
       }
     } else {
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          name,
-          githubId
+      user = await runDbQuery(
+        prisma.user.create({
+          data: {
+            email: email.toLowerCase(),
+            name,
+            githubId
+          }
+        }),
+        () => {
+          const u = {
+            id: `mock-user-${Date.now()}`,
+            email: email.toLowerCase(),
+            name,
+            githubId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          mockUsers.push(u);
+          return u;
         }
-      });
+      );
     }
 
     // Sign JWT Token

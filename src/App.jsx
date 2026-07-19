@@ -4,6 +4,7 @@ import About from './pages/About.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Login from './pages/Login.jsx';
 import Profile from './pages/Profile.jsx';
+import AiAdvisor from './pages/AiAdvisor.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 
@@ -29,6 +30,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/ai-advisor" 
+          element={
+            <ProtectedRoute>
+              <AiAdvisor />
             </ProtectedRoute>
           } 
         />
